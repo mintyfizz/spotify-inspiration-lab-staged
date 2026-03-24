@@ -1,89 +1,213 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 
 namespace Spotify
 {
+    public enum Genre
+    {
+        Pop,
+        Rock,
+        HipHop,
+        Jazz,
+        Classical,
+        Country,
+        Alternative,
+        RnB,
+        Funk,
+        Indie,
+        Latin,
+        World,
+        Gospel,
+        Opera,
+        Electronic,
+        Reggae,
+        Blues,
+        Rap,
+        Punk,
+        Swing,
+        Disco,
+        Dance,
+        Folk,
+        Metal,
+        Soul,
+        Ambient
+    }
+
+    public class Song
+    {
+        public string Name { get; }
+        public Album? Album { get; internal set; }
+        public bool HasLyrics { get; }
+        public Artist Owner { get; }
+        public int Duration { get; }
+        public Genre Genre { get; }
+        public DateOnly ReleaseDate { get; }
+        public bool IsPaused { get; private set; }
+
+        public Song(string name, Artist owner, bool hasLyrics, Genre genre, int duration, DateOnly releaseDate)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Song name is required.", nameof(name));
+            }
+
+            if (duration <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(duration), "Duration must be positive.");
+            }
+
+            Name = name.Trim();
+            Owner = owner;
+            HasLyrics = hasLyrics;
+            Genre = genre;
+            Duration = duration;
+            ReleaseDate = releaseDate;
+            Owner.AddSong(this);
+        }
+
+        public void Play()
+        {
+            IsPaused = false;
+            Console.WriteLine($"NOW PLAYING: {Name} by {Owner.Name}");
+        }
+
+        public void Pause()
+        {
+            IsPaused = true;
+            Console.WriteLine($"PAUSED: {Name} by {Owner.Name}");
+        }
+
+        public override string ToString()
+        {
+            string albumName = Album is null ? "Single" : Album.Name;
+            return $"{Name} | {Owner.Name} | Album: {albumName} | Genre: {Genre} | Duration: {Duration}s | Lyrics: {HasLyrics} | Release: {ReleaseDate:yyyy-MM-dd}";
+        }
+    }
 
     public class Album
     {
-        public string Name {get; set;}
-        public List<Song> Songs {get; set;}
-        public int Amount {get; private set;}
-        public DateOnly RealeaseDate {get; set;}
-        public Artist Artist {get; set;}
-        public int Duration {get; set;}
+        public string Name { get; }
+        public Genre Genre { get; }
+        public DateOnly ReleaseDate { get; }
+        public Artist Artist { get; }
+        public List<Song> Songs { get; }
+        public int Duration => Songs.Sum(song => song.Duration);
 
-        public Album(string name, DateOnly ReleaseDate, Artist artist)
+        public Album(string name, Genre genre, DateOnly releaseDate, Artist artist)
         {
-            Name = name; Songs = new List<Song>(); Amount = 0; 
-            RealeaseDate = ReleaseDate; 
-            Artist = artist; 
-            Duration = 0;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Album name is required.", nameof(name));
+            }
+
+            Name = name.Trim();
+            Genre = genre;
+            ReleaseDate = releaseDate;
+            Artist = artist;
+            Songs = new List<Song>();
+            Artist.AddAlbum(this);
         }
+
+        public void AddSong(Song song)
+        {
+            if (Songs.Contains(song))
+            {
+                return;
+            }
+
+            if (song.Album is not null && song.Album != this)
+            {
+                song.Album.RemoveSong(song);
+            }
+
+            Songs.Add(song);
+            song.Album = this;
+            Artist.AddSong(song);
+        }
+
+        public void RemoveSong(Song song)
+        {
+            if (!Songs.Remove(song))
+            {
+                return;
+            }
+
+            if (song.Album == this)
+            {
+                song.Album = null;
+            }
+        }
+
         public void Play()
         {
-            Console.WriteLine($"NOW PLAYING ALBUM: {Name} by {Artist.Name}\n");
+            Console.WriteLine($"NOW PLAYING ALBUM: {Name} by {Artist.Name}");
             foreach (Song song in Songs)
             {
                 song.Play();
             }
         }
 
+        public void Pause()
+        {
+            Console.WriteLine($"PAUSED ALBUM: {Name} by {Artist.Name}");
+        }
+
         public override string ToString()
         {
-            string s = $"ALBUM: {Name} by {Artist.Name}";
-            foreach (Song song in Songs)
-            {
-                s += "\n" + song.ToString();
-            }
-            return s;
-            
+            return $"{Name} | {Artist.Name} | Genre: {Genre} | Songs: {Songs.Count} | Duration: {Duration}s | Release: {ReleaseDate:yyyy-MM-dd}";
         }
     }
 
-    public enum Genre
+    public class Playlist
     {
-        Pop, Rock, HipHop, Jazz, Classical, Country, Alternative, RnB, Funk, Indie, Latin, World, Gospel, Opera,
-        Electronic, Reggae, Blues, Rap, Punk, Swing, Disco, Dance, Folk, Metal, Soul, Ambient
-    }
-    public class Song
-    {
-        public string Name { get; set; }
-        public Artist Owner { get; set; }
-        public bool HasLyrics {get; private set;}
-        public Genre G { get; set; }
-        public int Duration { get; set; }
-        
-        public bool Like { get; set; }
-        public Song(string name, Artist owner, bool hasLyrics, Genre genre, int duration, bool like)
+        public string Name { get; }
+        public User Owner { get; }
+        public List<Song> Songs { get; }
+        public int Duration => Songs.Sum(song => song.Duration);
+
+        public Playlist(string name, User owner)
         {
-            Name = name;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Playlist name is required.", nameof(name));
+            }
+
+            Name = name.Trim();
             Owner = owner;
-            HasLyrics = hasLyrics;
-            G = genre;
-            Duration = duration;
-            Like = like;
-            Owner.Songs.Add(this); // testing 
+            Songs = new List<Song>();
         }
+
+        public void AddSong(Song song)
+        {
+            if (!Songs.Contains(song))
+            {
+                Songs.Add(song);
+            }
+        }
+
+        public void RemoveSong(Song song)
+        {
+            Songs.Remove(song);
+        }
+
         public void Play()
         {
-            // We will be playing the title, followed by x seconds of nothing
-            // pc cannot do anything while Thread.Sleep()
-            Console.WriteLine($"NOW PLAYING: {Name} by {Owner.Name}");
-            for (int i = 0; i < Duration; i++)
+            Console.WriteLine($"NOW PLAYING PLAYLIST: {Name} (Owner: {Owner.Name})");
+            foreach (Song song in Songs)
             {
-                Console.Write(".");
-                Thread.Sleep(1000);
+                song.Play();
             }
-            Console.WriteLine("\nSong ended.");
         }
 
-        public override String ToString()
+        public void Pause()
         {
-            return $"SONG: {Name} by {Owner.Name} - Genre: {G}, Duration: {Duration} seconds, Has Lyrics: {HasLyrics}, Liked: {Like}";
+            Console.WriteLine($"PAUSED PLAYLIST: {Name} (Owner: {Owner.Name})");
         }
 
-
+        public override string ToString()
+        {
+            return $"{Name} | Songs: {Songs.Count} | Duration: {Duration}s";
+        }
     }
 }
