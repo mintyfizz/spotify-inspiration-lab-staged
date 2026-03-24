@@ -1,0 +1,54 @@
+creating a spotify like app:
+
+
+SPOTIFY:
+-- songs
+-- playlists 
+-- albums 
+-- users
+-- favorites
+-- artists 
+
+SONGS:
+--- name --> string
+--- album --> album
+--- has lyrics --> boolean 
+--- artist --> owner
+--- duration --> int 
+--- genre --> G (enum: rap, house, etc)
+--- release date --> date
+    method:
+        + play ()
+        + pause ()
+        + to string()
+
+ALBUM:
+--- name --> string
+--- songs titles --> list 
+--- genre --> G (enum: rap, house, etc)
+--- artist --> artist
+--- release date --> date
+    method:
+        + play ()
+        + pause ()
+        + add songs ()
+        + remove songs()
+
+ARTIST:
+--- same 
+--- songs: songs titles --> list 
+--- albums 
+--- genre --> G (enum: rap, house, etc)
+--- album count --> int 
+    method:
+        + add songs ()
+        + remove songs()
+        + add albums ()
+        + remove albums()
+
+USERS:
+---
+
+PLAYLISTS:
+--- 
+

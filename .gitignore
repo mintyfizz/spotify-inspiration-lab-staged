@@ -1,0 +1,10 @@
+# Build outputs
+bin/
+obj/
+
+# OS files
+.DS_Store
+
+# IDE
+.vs/
+.vscode/
